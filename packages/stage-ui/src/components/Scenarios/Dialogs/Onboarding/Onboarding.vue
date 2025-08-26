@@ -38,6 +38,9 @@ const {
   isLoadingActiveProviderModels,
 } = storeToRefs(consciousnessStore)
 
+// Add a state to skip model validation
+const skipModelValidation = ref(false)
+
 // Popular providers for first-time setup
 const popularProviders = computed(() => {
   const popular = ['openai', 'anthropic', 'google-generative-ai', 'openrouter-ai', 'ollama', 'deepseek', 'player2']
@@ -85,11 +88,37 @@ const canSave = computed(() => {
     return false
   if (selectedProvider.value.id === 'cloudflare-workers-ai' && !accountId.value.trim())
     return false
+
+  // Provider configuration verification must pass
+  if (!isValid.value)
+    return false
+
+  // If skip validation mode is enabled, allow the use of search queries as model names
+  if (skipModelValidation.value) {
+    return true
+  }
+
+  // In normal mode, a model needs to be selected
   if (!activeModel.value)
     return false
 
-  return isValid.value
+  return true
 })
+
+// Handling changes to skip validation options
+function handleSkipValidationChange(value: boolean) {
+  skipModelValidation.value = value
+
+  // save to providers store
+  if (selectedProvider.value) {
+    providersStore.setSkipCustomModelValidation(selectedProvider.value.id, value)
+  }
+
+  // If skip validation is enabled and there are search queries, automatically set the model name
+  if (value && modelSearchQuery.value.trim() && !activeModel.value) {
+    activeModel.value = modelSearchQuery.value.trim()
+  }
+}
 
 // Provider selection
 function selectProvider(provider: typeof popularProviders.value[0]) {
@@ -100,6 +129,9 @@ function selectProvider(provider: typeof popularProviders.value[0]) {
   baseUrl.value = (defaultOptions as any)?.baseUrl || ''
   apiKey.value = ''
   accountId.value = ''
+
+  // Load the skip verification settings saved previously
+  skipModelValidation.value = providersStore.getSkipCustomModelValidation(provider.id)
 
   // Reset validation
   isValid.value = false
@@ -251,8 +283,20 @@ async function handleFinishProviderConfiguration() {
 }
 
 async function handleSave() {
+  // 如果启用了跳过验证且使用搜索查询作为模型名称
+  if (skipModelValidation.value && modelSearchQuery.value.trim() && !activeModel.value) {
+    activeModel.value = modelSearchQuery.value.trim()
+  }
+
   emit('configured')
 }
+
+// 监听搜索查询变化，如果启用跳过验证则自动设置模型名称
+watch([modelSearchQuery, skipModelValidation], () => {
+  if (skipModelValidation.value && modelSearchQuery.value.trim()) {
+    activeModel.value = modelSearchQuery.value.trim()
+  }
+}, { immediate: true })
 
 // Initialize with first popular provider
 onMounted(() => {
@@ -460,6 +504,7 @@ onMounted(() => {
             <RadioCardManySelect
               v-model="activeModel"
               v-model:search-query="modelSearchQuery"
+              v-model:skip-validation="skipModelValidation"
               :items="providerModels.sort((a, b) => a.id === activeModel ? -1 : b.id === activeModel ? 1 : 0)"
               :searchable="true"
               :search-placeholder="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.search_placeholder')"
@@ -469,7 +514,11 @@ onMounted(() => {
               :custom-input-placeholder="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.custom_model_placeholder')"
               :expand-button-text="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.expand')"
               :collapse-button-text="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.collapse')"
+              :show-skip-validation-option="true"
+              :skip-validation-label="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.skip_validation_label')"
+              :skip-validation-description="t('settings.pages.modules.consciousness.sections.section.provider-model-selection.skip_validation_description')"
               list-class="max-h-[calc(100dvh-17rem)] sm:max-h-120"
+              @update:skip-validation="handleSkipValidationChange"
             />
           </div>
 

@@ -24,6 +24,9 @@ interface Props {
   collapseButtonText?: string
   showMore?: boolean
   listClass?: string
+  showSkipValidationOption?: boolean
+  skipValidationLabel?: string
+  skipValidationDescription?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,13 +40,18 @@ const props = withDefaults(defineProps<Props>(), {
   collapseButtonText: 'Show less',
   showMore: true,
   listClass: '',
+  showSkipValidationOption: false,
+  skipValidationLabel: 'Use custom name without validation',
+  skipValidationDescription: 'Skip model name validation and use custom names directly',
 })
 
 const emit = defineEmits<{
   'update:customValue': [value: string]
+  'update:skipValidation': [value: boolean]
 }>()
 
 const modelValue = defineModel<string>({ required: true })
+const skipValidation = defineModel<boolean>('skipValidation', { default: false })
 
 const searchQuery = ref('')
 const isListExpanded = ref(false)
@@ -52,6 +60,11 @@ const customValue = ref('')
 const filteredItems = computed(() => {
   if (!searchQuery.value)
     return props.items
+
+  // If skip verification is enabled, no filtering will be performed, and any search content will be allowed
+  if (skipValidation.value) {
+    return props.items
+  }
 
   const query = searchQuery.value.toLowerCase()
   return props.items.filter(item =>
@@ -63,6 +76,10 @@ const filteredItems = computed(() => {
 function updateCustomValue(value: string) {
   customValue.value = value
   emit('update:customValue', value)
+}
+
+function updateSkipValidation(value: boolean) {
+  emit('update:skipValidation', value)
 }
 </script>
 
@@ -84,15 +101,35 @@ function updateCustomValue(value: string) {
       >
     </div>
 
+    <!-- Skip validation option -->
+    <div v-if="showSkipValidationOption" class="mt-3 flex items-start gap-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+      <label class="flex cursor-pointer items-start gap-2">
+        <input
+          v-model="skipValidation"
+          type="checkbox"
+          class="mt-1 border-amber-300 rounded text-amber-600 dark:border-amber-600 focus:border-amber-500 dark:bg-amber-900/50 focus:ring-amber-500"
+          @change="updateSkipValidation($event.target.checked)"
+        >
+        <div class="flex flex-col gap-1">
+          <span class="text-sm text-amber-800 font-medium dark:text-amber-200">
+            {{ skipValidationLabel }}
+          </span>
+          <span class="text-xs text-amber-700 dark:text-amber-300">
+            {{ skipValidationDescription }}
+          </span>
+        </div>
+      </label>
+    </div>
+
     <!-- Items list with search results info -->
     <div class="mt-4 space-y-2">
       <!-- Search results info -->
-      <div v-if="searchQuery" class="text-sm text-neutral-500 dark:text-neutral-400">
+      <div v-if="searchQuery && !skipValidation" class="text-sm text-neutral-500 dark:text-neutral-400">
         {{ searchResultsText.replace('{count}', filteredItems.length.toString()).replace('{total}', items.length.toString()) }}
       </div>
 
       <!-- No search results -->
-      <Alert v-if="searchQuery && filteredItems.length === 0" type="warning">
+      <Alert v-if="searchQuery && filteredItems.length === 0 && !skipValidation" type="warning">
         <template #title>
           {{ searchNoResultsTitle }}
         </template>
@@ -100,6 +137,17 @@ function updateCustomValue(value: string) {
           {{ searchNoResultsDescription.replace('{query}', searchQuery) }}
         </template>
       </Alert>
+
+      <!-- Custom model input when skip validation is enabled and no results -->
+      <div v-if="skipValidation && searchQuery && filteredItems.length === 0" class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+        <div class="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+          <div i-solar:info-circle-bold-duotone class="text-lg" />
+          <span class="text-sm font-medium">使用自定义模型名称</span>
+        </div>
+        <p class="mt-1 text-xs text-blue-700 dark:text-blue-300">
+          将使用您输入的搜索内容 "{{ searchQuery }}" 作为模型名称
+        </p>
+      </div>
 
       <!-- Items grid -->
       <div class="relative">

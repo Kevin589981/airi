@@ -166,6 +166,8 @@ export const useProvidersStore = defineStore('providers', () => {
     valid: false,
   }))
 
+  const skipCustomModelValidation = useLocalStorage<Record<string, boolean>>('settings/skip-custom-model-validation', {})
+
   // Helper function to fetch OpenRouter models manually
   async function fetchOpenRouterModels(config: Record<string, unknown>): Promise<ModelInfo[]> {
     try {
@@ -2322,6 +2324,14 @@ export const useProvidersStore = defineStore('providers', () => {
     return providerCredentials.value[providerId]
   }
 
+  function getSkipCustomModelValidation(providerId: string) {
+    return skipCustomModelValidation.value[providerId] || false
+  }
+
+  function setSkipCustomModelValidation(providerId: string, skip: boolean) {
+    skipCustomModelValidation.value[providerId] = skip
+  }
+
   return {
     providers: providerCredentials,
     getProviderConfig,
@@ -2347,5 +2357,7 @@ export const useProvidersStore = defineStore('providers', () => {
     configuredChatProvidersMetadata,
     configuredSpeechProvidersMetadata,
     configuredTranscriptionProvidersMetadata,
+    getSkipCustomModelValidation,
+    setSkipCustomModelValidation,
   }
 })

@@ -175,6 +175,8 @@ pages:
             search_results: 找到 {count} / {total} 个模型
             show_less: 显示更多
             show_more: 收起
+            skip_validation_label: 使用自定义名称而不检查
+            skip_validation_description: 跳过模型名称验证，直接使用自定义名称（适用于第三方平台的重命名模型）
             subtitle: 选择一个模型
             title: 模型
       title: 意识

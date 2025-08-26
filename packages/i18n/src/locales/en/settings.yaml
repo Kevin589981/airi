@@ -193,6 +193,8 @@ pages:
             search_results: Found {count} of {total} models
             show_less: Show less
             show_more: Show more
+            skip_validation_label: Use a custom name without verification
+            skip_validation_description: Skip the model name validation and directly use the custom name (suitable for models renamed on third-party platforms)
             subtitle: Select a model from the provider
             title: Model
       title: Consciousness

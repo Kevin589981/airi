@@ -192,6 +192,8 @@ pages:
             search_results: Encontrados {count} de {total} modelos
             show_less: Mostrar menos
             show_more: Mostrar más
+            skip_validation_label: Usar nombre personalizado sin verificación
+            skip_validation_description: Omitir la validación del nombre del modelo y usar directamente el nombre personalizado (adecuado para modelos renombrados en plataformas de terceros)
             subtitle: Selecciona un modelo del proveedor
             title: Modelo
       title: Consciencia
